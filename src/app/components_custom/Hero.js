@@ -16,7 +16,6 @@ export function Hero() {
                 </span>
             </div>
             <Form />
-            <Example /> {/* Place Example right after Form */}
         </div>
     )
 }

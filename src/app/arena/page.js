@@ -43,7 +43,7 @@ export default function ArenaPage() {
         <div className="w-1/3 rounded-lg m-6 text-white flex flex-col justify-between p-4" style={{ backgroundColor: "#000000" }}>
           {/* Header aligned top-right */}
           <div className="flex justify-end">
-            <h2 className="text-l text-white  border-md p-2 rounded-md" style={{ backgroundColor: "#262626" }}>Explain MCP Servers</h2>
+            <h2 className="text-l text-white  border-md p-2 rounded-md" style={{ backgroundColor: "#262626" }}>What are Load Balancers</h2>
           </div>
 
           {/* Messages */}

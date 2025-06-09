@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 export function PlaceholdersAndVanishInput({
   placeholders,
   onChange,
+  value,
   onSubmit
 }) {
   const [currentPlaceholder, setCurrentPlaceholder] = useState(0);
@@ -41,7 +42,6 @@ export function PlaceholdersAndVanishInput({
   const canvasRef = useRef(null);
   const newDataRef = useRef([]);
   const inputRef = useRef(null);
-  const [value, setValue] = useState("");
   const [animating, setAnimating] = useState(false);
 
   const draw = useCallback(() => {
@@ -137,7 +137,7 @@ export function PlaceholdersAndVanishInput({
         if (newDataRef.current.length > 0) {
           animateFrame(pos - 8);
         } else {
-          setValue("");
+          // setValue("");
           setAnimating(false);
         }
       });
@@ -157,7 +157,10 @@ export function PlaceholdersAndVanishInput({
 
     const value = inputRef.current?.value || "";
     if (value && inputRef.current) {
-      const maxX = newDataRef.current.reduce((prev, current) => (current.x > prev ? current.x : prev), 0);
+      const maxX = newDataRef.current.reduce(
+        (prev, current) => (current.x > prev ? current.x : prev),
+        0
+      );
       animate(maxX);
     }
   };
@@ -167,6 +170,7 @@ export function PlaceholdersAndVanishInput({
     vanishAndSubmit();
     onSubmit && onSubmit(e);
   };
+
   return (
     <form
       className={cn(
@@ -176,10 +180,11 @@ export function PlaceholdersAndVanishInput({
       onSubmit={handleSubmit}>
       <canvas
         className={cn(
-          "absolute pointer-events-none  text-base transform scale-50 top-[20%] left-2 sm:left-8 origin-top-left filter invert dark:invert-0 pr-20",
+          "absolute pointer-events-none text-base transform scale-50 top-[20%] left-2 sm:left-8 origin-top-left filter invert dark:invert-0 pr-20",
           !animating ? "opacity-0" : "opacity-100"
         )}
-        ref={canvasRef} />
+        ref={canvasRef}
+      />
       <input
         name="prompt"
         onChange={(e) => {
@@ -190,12 +195,13 @@ export function PlaceholdersAndVanishInput({
         }}
         onKeyDown={handleKeyDown}
         ref={inputRef}
-        value={value}
+        value={value}  // Ensure this is always controlled by the value prop
         type="text"
         className={cn(
           "w-full relative text-sm sm:text-base z-50 border-none dark:text-white bg-transparent text-black h-full rounded-full focus:outline-none focus:ring-0 pl-4 sm:pl-10 pr-20",
           animating && "text-transparent dark:text-transparent"
-        )} />
+        )}
+      />
       <button
         disabled={!value}
         type="submit"
@@ -224,13 +230,13 @@ export function PlaceholdersAndVanishInput({
             transition={{
               duration: 0.3,
               ease: "linear",
-            }} />
+            }}
+          />
           <path d="M13 18l6 -6" />
           <path d="M13 6l6 6" />
         </motion.svg>
       </button>
-      <div
-        className="absolute inset-0 flex items-center rounded-full pointer-events-none">
+      <div className="absolute inset-0 flex items-center rounded-full pointer-events-none">
         <AnimatePresence mode="wait">
           {!value && (
             <motion.p

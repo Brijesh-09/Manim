@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { loginUser, registerUser,  } from "../services/auth_service";
+import { loginUser, registerUser } from "../services/auth_service";
 import { fetchUser, logoutUser } from "../services/protected_service";
 import { useRouter } from "next/navigation";
 
@@ -75,13 +75,15 @@ export default function Navbar() {
     router.push('/');
   };
 
+  // Show modal when unauthorized
+
   return (
     <>
       <div className="flex items-center justify-between p-2 bg-black">
         <img
           src="/logoo.png"
           alt="Share Icon"
-          className="w-60 h-30 cursor-pointer"
+          className="w-46 h-32 cursor-pointer"
           onClick={() => router.push("/")}
         />
 
@@ -89,8 +91,7 @@ export default function Navbar() {
           {user ? (
             <>
               <span className="text-white font-semibold">
-                Welcome<span className="font-bold bg-gray-800 rounded-md p-2 "> {user.name || user.email?.split('@')[0]}
-                  </span> 
+                Welcome<span className="font-bold bg-gray-800 rounded-md p-2 "> {user.name || user.email?.split('@')[0]}</span>
               </span>
               <button
                 onClick={handleLogout}
