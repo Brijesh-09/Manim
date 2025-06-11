@@ -189,7 +189,6 @@ export function PlaceholdersAndVanishInput({
         name="prompt"
         onChange={(e) => {
           if (!animating) {
-            setValue(e.target.value);
             onChange && onChange(e);
           }
         }}
