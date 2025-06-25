@@ -2,7 +2,7 @@ import axios from 'axios';
 
 export const registerUser = async (formData) => {
   try {
-    const res = await axios.post('http://localhost:5000/auth/register', formData);
+    const res = await axios.post('http://localhost:8000/api/v1/auth/register', formData);
     return { success: true, data: res.data };
   } catch (err) {
     console.error('Registration failed:', err.response || err.message || err);
@@ -16,7 +16,7 @@ export const registerUser = async (formData) => {
 
 export const loginUser = async (formData) => {
   try {
-    const res = await axios.post('http://localhost:5000/auth/login', formData, {
+    const res = await axios.post('http://localhost:8000/api/v1/auth/login', formData, {
       withCredentials: true, // ✅ CRUCIAL FOR COOKIES
     });
     return { success: true, data: res.data };

@@ -1,165 +1,170 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { fetchUser } from '../services/protected_service';
 import useInputStore from '@/store/inputStore';
-
+import ReactPlayer from 'react-player';
+import { io } from 'socket.io-client';
+import { useAuthModal } from '@/lib/AuthModalContext';
+import { useRouter } from 'next/navigation';
 export default function ArenaPage() {
-  const [user, setUser] = useState(null);
+  const { user, updateUser } = useAuthModal();
   const [inputChatValue, setInputChatValue] = useState('');
-  const { inputValue, apiResponse, isLoading, error } = useInputStore();
-  const [isWriting, setIsWriting] = useState(false);
-
+  const { inputValue, apiResponse } = useInputStore();
   const [messages, setMessages] = useState([]);
+  const socketRef = useRef(null);
+  const router = useRouter();
 
   useEffect(() => {
-    const getUser = async () => {
-      const data = await fetchUser();
-      setUser(data);
-    };
-    getUser();
-  }, []);
+    if (!user) {
+      fetchUser().then(updateUser);
+    }
+    socketRef.current = io('http://localhost:8000');
+    socketRef.current.on('videoReady', ({ videoUrl }) => {
+      setVideoUrl(videoUrl);
+    });
+    return () => socketRef.current?.disconnect();
+  }, [user, updateUser]);
 
-  // Simulate AI reply after user sends a message
   useEffect(() => {
     if (messages.length && messages[messages.length - 1].type === 'user') {
       const userMsg = messages[messages.length - 1].text;
       setTimeout(() => {
         setMessages((prev) => [
           ...prev,
-          { type: 'ai', text: `AI response to: "${userMsg}"` },
+          { type: 'ai', text: `AI says: "${userMsg}"` },
         ]);
       }, 800);
     }
   }, [messages]);
 
+  const [videoUrl, setVideoUrl] = useState(null);
+  const [isWriting, setIsWriting] = useState(false);
+
   return (
-    <>
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 bg-black">
+    <div className="flex flex-col min-h-screen bg-black text-white">
+      {/* Navbar */}
+      
+      <div className="flex items-center justify-between border-b-1 border-white p-2 bg-black">
         <img
           src="/logoo.png"
-          alt="Share Icon"
-          className="w-60 h-30 cursor-pointer"
-          onClick={() => router.push("/")}
+          alt="Logo"
+          className="w-40 h-20 cursor-pointer"
+          onClick={() => router.push('/')}
         />
-        <div className="space-x-4 flex">
-          <button className="text-white bg-gray-200 p-2  flex  gap-2 rounded-md hover:bg-gray-600">
-            <img
-              src="https://www.svgrepo.com/show/506317/share-2.svg"
-              alt="Google"
-              className="w-5 h-5"
-            />
-          </button>
-          <h2 className="hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-            Welcome {user ? user.name : 'Guest'}!
-          </h2>
+        <h2 className='text-white font-bold'>{inputValue.prompt || 'NA'}</h2>
+        <div className="flex items-center space-x-4">
+          <span className="font-bold">
+            Welcome, {user ? user.name : 'Guest'}!
+          </span>
         </div>
       </div>
 
-      {/* Main Layout */}
-      <div className="flex flex-row bg-black h-screen">
+      {/* Main */}
+      <div className="flex flex-1 overflow-hidden min-h-0">
         {/* Left Sidebar */}
         <div
-          className="w-1/3 rounded-lg m-6 text-white flex flex-col justify-between p-4"
-          style={{ backgroundColor: "#000000" }}
+          className="flex flex-col w-1/4 m-4 bg-black rounded-lg"
+          style={{ height: 'calc(100vh - 96px)' }}
         >
-          {/* Prompt at top right */}
-          <div className="flex justify-end">
-            <h2
-              className="text-l text-white border-md p-2 rounded-md"
-              style={{ backgroundColor: "#262626" }}
-            >
-              {inputValue.prompt || "NA"}
+          {/* Prompt */}
+          <h1 className='tex-white'>manai</h1>
+          <div className="p-4  flex justify-end">
+            <h2 className="p-2 bg-[#262626] rounded">
+              {inputValue.prompt || 'NA'}
             </h2>
           </div>
 
-          {/* Scrollable Response + Chat Area */}
-          <div className="flex-1 overflow-y-auto flex flex-col mt-4 space-y-4 pr-2">
-            {/* AI Main Response: Manim Code */}
-            {apiResponse && apiResponse.success && apiResponse.manimCode?.content && (
-              <div className="bg-gray-800 p-2 rounded text-xs">
-                {/* <h4 className="text-white mb-1">Manim Code:</h4> */}
-                <pre className="overflow-auto whitespace-pre-wrap">
-                  {apiResponse.manimCode.content}
-                </pre>
-                <p className="text-gray-400 text-xs mt-2">
-                  Created: {apiResponse.prompt?.createdAt
-                    ? new Date(apiResponse.prompt.createdAt).toLocaleString()
-                    : 'N/A'}
-                </p>
-              </div>
-            )}
-
-            {/* Message Thread */}
-            {messages.map((msg, index) => (
-              <div
-                key={index}
-                className={`flex w-full ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}
-              >
+          {/* Chat messages: scrollable */}
+          <div className="flex flex-col flex-grow overflow-hidden">
+            <div className="flex-grow overflow-y-auto px-4 space-y-4 pr-2">
+              {apiResponse?.success && apiResponse.aiResponse && (
+                <div className="bg-gray-800 p-2 rounded text-xs">
+                  <pre className="whitespace-pre-wrap">
+                    {apiResponse.aiResponse}
+                  </pre>
+                </div>
+              )}
+              {messages.map((msg, i) => (
                 <div
-                  className={`p-2 rounded max-w-xs text-sm ${
-                    msg.type === 'user'
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-700 text-white'
+                  key={i}
+                  className={`flex ${
+                    msg.type === 'user' ? 'justify-end' : 'justify-start'
                   }`}
                 >
-                  {msg.text}
+                  <div
+                    className={`p-2 rounded max-w-xs text-sm ${
+                      msg.type === 'user'
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-700 text-white'
+                    }`}
+                  >
+                    {msg.text}
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
 
-          {/* Input Area */}
-          <div className="flex items-center gap-2 mt-2 w-full">
-            <input
-              type="text"
-              placeholder="Type your message here..."
-              className="flex-grow p-2 outline-2 outline-offset-2 outline-blue-500 text-white rounded"
-              value={inputChatValue}
-              onChange={(e) => {
-                setInputChatValue(e.target.value);
-                setIsWriting(e.target.value.length > 0);
-              }}
-            />
-            {isWriting && (
-              <button
-                className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-400"
-                onClick={() => {
-                  if (inputChatValue.trim()) {
+            {/* Sticky Input at bottom */}
+            <div className="sticky bottom-0 bg-black pb-16">
+              <div className="flex items-center gap-2 bg-[#1a1a1a] p-2 rounded-lg">
+                <input
+                  type="text"
+                  placeholder="Type your message..."
+                  className="flex-grow p-2 bg-[#333] rounded outline-none placeholder-gray-400 text-white"
+                  value={inputChatValue}
+                  onChange={(e) => {
+                    setInputChatValue(e.target.value);
+                    setIsWriting(e.target.value.trim().length > 0);
+                  }}
+                />
+                <button
+                  disabled={!isWriting}
+                  onClick={() => {
+                    if (!inputChatValue.trim()) return;
                     setMessages((prev) => [
                       ...prev,
-                      { type: 'user', text: inputChatValue },
+                      { type: 'user', text: inputChatValue.trim() },
                     ]);
                     setInputChatValue('');
                     setIsWriting(false);
-                  }
-                }}
-              >
-                <img
-                  src="https://www.svgrepo.com/show/533306/send.svg"
-                  alt="send"
-                  className="w-5 h-5"
-                />
-              </button>
-            )}
+                  }}
+                  className={`p-2 rounded ${
+                    isWriting
+                      ? 'bg-green-500 hover:bg-green-400'
+                      : 'bg-gray-600 cursor-not-allowed'
+                  }`}
+                >
+                  <img
+                    src="https://www.svgrepo.com/show/533306/send.svg"
+                    alt="Send"
+                    className="w-5 h-5"
+                  />
+                </button>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Right Content Area */}
-        <div
-          className="w-2/3 p-6 rounded-lg m-6 outline overflow-y-auto"
-          style={{ backgroundColor: "#000000" }}
-        >
-          <h1 className="text-3xl font-bold mb-4 text-gray-700">
-            Main Code Area
-          </h1>
-          <p>This is where the main app content goes.</p>
-          <div className="bg-white p-4 rounded shadow mt-6">
-            <videoplayer>Video Player Placeholder</videoplayer>
+        {/* Right Content */}
+        <div className="flex-1 m-4 p-6 bg-black rounded-lg overflow-y-auto">
+          <h3 className="text-xl mb-4">Generated Content</h3>
+          <div className="bg-white rounded shadow p-4">
+            {videoUrl ? (
+              <ReactPlayer
+                url={videoUrl}
+                controls
+                width="100%"
+                height="auto"
+                style={{ borderRadius: 12 }}
+              />
+            ) : (
+              <p className="text-black">🎥 Waiting for video...</p>
+            )}
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }
+

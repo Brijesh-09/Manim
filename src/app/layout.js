@@ -1,5 +1,8 @@
+// app/layout.js
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { AuthModalProvider } from "@/lib/AuthModalContext";
+
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -22,7 +25,9 @@ export default function RootLayout({ children }) {
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {children}
+        <AuthModalProvider>
+          {children}
+        </AuthModalProvider>
       </body>
     </html>
   );

@@ -1,9 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { loginUser, registerUser } from "../services/auth_service";
-import { fetchUser, logoutUser } from "../services/protected_service";
-import { useRouter } from "next/navigation";
+// import { useEffect, useState } from "react";
+ import { loginUser, registerUser } from "../services/auth_service";
+ import { fetchUser, logoutUser  ,} from "../services/protected_service";
+// import { useRouter } from "next/navigation";
+
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { useAuthModal } from '@/lib/AuthModalContext';
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -18,6 +22,9 @@ export default function Navbar() {
   const [register, setRegister] = useState(false);
   const [emailSignIn, setEmailSignIn] = useState(false);
   const router = useRouter();
+  
+  // Use the context
+  const { shouldOpenModal, resetModalTrigger } = useAuthModal();
 
   useEffect(() => {
     const getUser = async () => {
@@ -26,6 +33,14 @@ export default function Navbar() {
     };
     getUser();
   }, []);
+
+  // Watch for modal trigger from form
+  useEffect(() => {
+    if (shouldOpenModal && !user) {
+      openModal();
+      resetModalTrigger();
+    }
+  }, [shouldOpenModal, user, resetModalTrigger]);
 
   const handleChange = (e) => {
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
@@ -51,6 +66,7 @@ export default function Navbar() {
     if (response.success) {
       console.log("Registration successful:", response.data);
       setRegister(false);
+      setUser(response.data.user); // Update user state after registration
     } else {
       console.error("Registration failed:", response.error);
     }
