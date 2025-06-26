@@ -40,6 +40,12 @@ const useInputStore = create((set) => ({
     apiResponse: null,
     error: null,
     isLoading: false
+  })),
+
+  setProjectRespose: (response) => set(()=> ({
+    projectResponse: response,
+    isLoading: false,
+    error: null
   }))
 }));
 

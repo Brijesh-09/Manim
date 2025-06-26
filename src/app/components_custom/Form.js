@@ -28,32 +28,38 @@ export function Form() {
 
   const onSubmit = async (e) => {
     e.preventDefault();
-    
-    // Check if user is authenticated before proceeding
+  
     const user = await fetchUser();
-    
     if (!user) {
-      // User is not logged in, trigger the login modal
       triggerLoginModal();
       return;
     }
-
-    // User is authenticated, proceed with form submission
+  
     setLoading(true);
     setIsLoading(true);
-
+  
     const response = await generateVideo(inputValue.prompt);
+  
     if (response.success) {
       console.log("Video generation successful:", response.data);
       setIsLoading(false);
       setApiResponse(response);
-      router.push('/arena');
+  
+      const projectId = response.projectId;
+      if (projectId) {
+        router.push(`/~/${projectId}`);
+      } else {
+        console.error("Project ID missing in response");
+      }
+  
     } else {
       console.error("Video generation failed:", response.error);
       setIsLoading(false);
     }
+  
     console.log("submitted", inputValue.prompt);
   };
+  
 
 
   return (

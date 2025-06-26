@@ -99,7 +99,7 @@ export default function Navbar() {
         <img
           src="/logoo.png"
           alt="Share Icon"
-          className="w-46 h-32 cursor-pointer"
+          className="w-40 h-20 cursor-pointer"
           onClick={() => router.push("/")}
         />
 

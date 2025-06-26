@@ -43,7 +43,6 @@ export const generateVideo = async (prompt, handleUnauthorized) => {
       if (handleUnauthorized) handleUnauthorized();
       throw new Error('Unauthorized');
     }
-
     const data = res.data;
     console.log('Video generation response:', data);
 
@@ -59,3 +58,5 @@ export const generateVideo = async (prompt, handleUnauthorized) => {
     throw err;
   }
 };
+
+//get video & Project 
