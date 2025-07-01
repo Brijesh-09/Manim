@@ -9,7 +9,7 @@ export default function ProjectPage() {
   const { projectId } = useParams();
 
   const [project, setProject] = useState(null);
-  const [videoUrl, setVideoUrl] = useState(null); // ✅ Manage video URL separately
+  const [videoUrl, setVideoUrl] = useState(null);
   const [user, setUser] = useState(null);
   const [messages, setMessages] = useState([]);
   const [inputChatValue, setInputChatValue] = useState("");
@@ -18,14 +18,15 @@ export default function ProjectPage() {
   const inputRef = useRef(null);
   const messagesEndRef = useRef(null);
 
-  // Scroll to bottom when messages or typing state change
+  // Force player refresh trigger
+  const [playerKey, setPlayerKey] = useState(Date.now());
+
   useEffect(() => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages, isTyping]);
 
-  // Fetch project on load
   useEffect(() => {
     if (!projectId) return;
 
@@ -36,10 +37,18 @@ export default function ProjectPage() {
         });
         const data = await res.json();
         if (data.success) {
+          const latest = data.project.iterations?.at(-1);
           setProject(data.project);
-          const latest = data.project.iterations.at(-1);
+          console.log("Fetched project:", data.project);
+          console.log("----------------------------");
+          console.log("Fetched project:", data.project.iterations);
+
           if (latest?.videoUrl?.endsWith(".mp4")) {
-            setVideoUrl(latest.videoUrl); // ✅ Set initial video URL
+            const urlWithTimestamp = `${latest.videoUrl}?t=${Date.now()}`;
+            setVideoUrl(urlWithTimestamp); // 🔥 This forces ReactPlayer to re-fetch even if same path
+            setPlayerKey(Date.now());
+          } else {
+            setVideoUrl(null);
           }
         }
       } catch (err) {
@@ -47,7 +56,11 @@ export default function ProjectPage() {
       }
     };
 
-    fetchProject();
+    const delay = 5000;
+    const timeout = setTimeout(fetchProject, delay);
+    console.log(`Fetching project ${projectId} in ${delay / 1000} seconds...`);
+
+    return () => clearTimeout(timeout); // cleanup // Small delay to let routing settle
   }, [projectId]);
 
   useEffect(() => {
@@ -82,7 +95,6 @@ export default function ProjectPage() {
 
       setMessages(prev => [...prev, { type: 'ai', text: data.text }]);
 
-      // ✅ Poll for updated project with new video
       const pollForVideo = async (retries = 20, delay = 1500) => {
         for (let i = 0; i < retries; i++) {
           const updatedRes = await fetch(`http://localhost:8000/api/v1/video/${projectId}`, {
@@ -92,11 +104,10 @@ export default function ProjectPage() {
 
           if (updatedData?.success && updatedData.project?.iterations?.length) {
             const latest = updatedData.project.iterations.at(-1);
-
             if (latest?.videoUrl?.endsWith(".mp4") && latest.videoUrl !== videoUrl) {
-              console.log("✅ New video detected:", latest.videoUrl);
               setProject(updatedData.project);
-              setVideoUrl(latest.videoUrl); // ✅ Automatically update videoUrl
+              setVideoUrl(latest.videoUrl);
+              setPlayerKey(Date.now()); // 👈 force refresh video
               break;
             }
           }
@@ -106,7 +117,6 @@ export default function ProjectPage() {
       };
 
       await pollForVideo();
-
     } catch (err) {
       console.error('❌ Chat error:', err);
       setMessages(prev => [...prev, { type: 'ai', text: '⚠️ AI failed to respond.' }]);
@@ -149,7 +159,8 @@ export default function ProjectPage() {
                   </div>
                   <div className="flex justify-start">
                     <div className="p-2 rounded max-w-xs text-sm bg-gray-700 text-white whitespace-pre-wrap overflow-x-auto">
-                      <code>{iteration.code}</code>
+                      {/* <code>{iteration.code}</code> */}
+                      <code>{iteration.aiResponse}</code>
                     </div>
                   </div>
                 </div>
@@ -202,22 +213,22 @@ export default function ProjectPage() {
         <div className="flex-1 m-4 p-6 bg-black rounded-lg overflow-y-auto">
           <h3 className="text-xl mb-4">Video</h3>
           <div className="flex-1 m-4 p-6 bg-black rounded-lg overflow-y-auto">
-        <h3 className="text-xl mb-4">Video</h3>
-        <div className="bg-white rounded shadow p-4">
-          {videoUrl ? (
-            <ReactPlayer
-              key={videoUrl} // ensures re-render
-              url={videoUrl}
-              controls
-              width="100%"
-              height="auto"
-              style={{ borderRadius: 12 }}
-            />
-          ) : (
-            <p className="text-black">🎥 Waiting for video...</p>
-          )}
-        </div>
-      </div>
+            <h3 className="text-xl mb-4">Video</h3>
+            <div className="bg-white rounded shadow p-4">
+              {videoUrl ? (
+                <ReactPlayer
+                  key={videoUrl} // ensures re-render
+                  url={videoUrl}
+                  controls
+                  width="100%"
+                  height="auto"
+                  style={{ borderRadius: 12 }}
+                />
+              ) : (
+                <p className="text-black">🎥 Waiting for video...</p>
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </div>
