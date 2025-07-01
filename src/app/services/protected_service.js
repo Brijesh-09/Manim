@@ -59,4 +59,47 @@ export const generateVideo = async (prompt, handleUnauthorized) => {
   }
 };
 
-//get video & Project 
+//chat Interaction 
+
+export const handleSendMessage = async () => {
+  if (!inputChatValue.trim() || !projectId) return;
+
+  const userMessage = inputChatValue;
+  setMessages(prev => [...prev, { type: 'user', text: userMessage }]);
+  setInputChatValue('');
+  setIsWriting(false);
+  setIsTyping(true);
+
+  try {
+    const res = await fetch(`http://localhost:8000/api/v1/video/chat/${projectId}`, {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ message: userMessage }),
+    });
+
+    const data = await res.json();
+    if (!data.success) throw new Error(data.error || "Chat failed");
+
+    // Show AI message
+    setMessages(prev => [...prev, { type: 'ai', text: data.text }]);
+
+    // 👇 OPTIONAL: Update project state with new iteration if needed
+    const updatedProjectRes = await fetch(`http://localhost:8000/api/v1/video/${projectId}`, {
+      credentials: "include",
+    });
+    const updatedProjectData = await updatedProjectRes.json();
+    if (updatedProjectData.success) {
+      setProject(updatedProjectData.project);
+    }
+
+  } catch (err) {
+    console.error('❌ Chat error:', err);
+    setMessages(prev => [...prev, { type: 'ai', text: '⚠️ AI failed to respond.' }]);
+  } finally {
+    setIsTyping(false);
+  }
+};
+

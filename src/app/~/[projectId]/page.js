@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import { useParams } from "next/navigation";
 import ReactPlayer from "react-player";
 import { fetchUser } from "@/app/services/protected_service";
@@ -8,9 +8,8 @@ import { fetchUser } from "@/app/services/protected_service";
 export default function ProjectPage() {
   const { projectId } = useParams();
 
-
   const [project, setProject] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [videoUrl, setVideoUrl] = useState(null); // ✅ Manage video URL separately
   const [user, setUser] = useState(null);
   const [messages, setMessages] = useState([]);
   const [inputChatValue, setInputChatValue] = useState("");
@@ -19,12 +18,14 @@ export default function ProjectPage() {
   const inputRef = useRef(null);
   const messagesEndRef = useRef(null);
 
+  // Scroll to bottom when messages or typing state change
   useEffect(() => {
     if (messagesEndRef.current) {
       messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [messages, isTyping]);
 
+  // Fetch project on load
   useEffect(() => {
     if (!projectId) return;
 
@@ -36,58 +37,96 @@ export default function ProjectPage() {
         const data = await res.json();
         if (data.success) {
           setProject(data.project);
+          const latest = data.project.iterations.at(-1);
+          if (latest?.videoUrl?.endsWith(".mp4")) {
+            setVideoUrl(latest.videoUrl); // ✅ Set initial video URL
+          }
         }
       } catch (err) {
         console.error("Error fetching project:", err);
-      } finally {
-        setLoading(false);
       }
     };
 
     fetchProject();
   }, [projectId]);
 
-  // ✅ Fetch Logged-in User
   useEffect(() => {
     const getUser = async () => {
       const data = await fetchUser();
-      setUser(data); // null if not logged in
+      setUser(data);
     };
-
     getUser();
   }, []);
 
-  const handleSendMessage = () => {
-    if (!inputChatValue.trim()) return;
-    setMessages((prev) => [...prev, { type: "user", text: inputChatValue }]);
-    setInputChatValue("");
+  const handleSendMessage = async () => {
+    if (!inputChatValue.trim() || !projectId) return;
+
+    const userMessage = inputChatValue;
+    setMessages(prev => [...prev, { type: 'user', text: userMessage }]);
+    setInputChatValue('');
     setIsWriting(false);
     setIsTyping(true);
 
-    setTimeout(() => {
-      setMessages((prev) => [
-        ...prev,
-        { type: "ai", text: `AI response to: \"${inputChatValue}\"` },
-      ]);
+    try {
+      const res = await fetch(`http://localhost:8000/api/v1/video/chat/${projectId}`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ message: userMessage }),
+      });
+
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error || "Chat failed");
+
+      setMessages(prev => [...prev, { type: 'ai', text: data.text }]);
+
+      // ✅ Poll for updated project with new video
+      const pollForVideo = async (retries = 20, delay = 1500) => {
+        for (let i = 0; i < retries; i++) {
+          const updatedRes = await fetch(`http://localhost:8000/api/v1/video/${projectId}`, {
+            credentials: "include",
+          });
+          const updatedData = await updatedRes.json();
+
+          if (updatedData?.success && updatedData.project?.iterations?.length) {
+            const latest = updatedData.project.iterations.at(-1);
+
+            if (latest?.videoUrl?.endsWith(".mp4") && latest.videoUrl !== videoUrl) {
+              console.log("✅ New video detected:", latest.videoUrl);
+              setProject(updatedData.project);
+              setVideoUrl(latest.videoUrl); // ✅ Automatically update videoUrl
+              break;
+            }
+          }
+
+          await new Promise(res => setTimeout(res, delay));
+        }
+      };
+
+      await pollForVideo();
+
+    } catch (err) {
+      console.error('❌ Chat error:', err);
+      setMessages(prev => [...prev, { type: 'ai', text: '⚠️ AI failed to respond.' }]);
+    } finally {
       setIsTyping(false);
-    }, 1000);
+    }
   };
 
-  const latestIteration = project?.iterations?.[project.iterations.length - 1];
-  const videoUrl = latestIteration?.videoUrl;
-  const prompt = latestIteration?.prompt;
 
   return (
     <div className="flex flex-col min-h-screen bg-black text-white">
       {/* Navbar */}
-      <div className="flex items-center justify-between mt-4 border-b-1 border-white p-2 bg-black">
+      <div className="flex items-center justify-between border-b-1 border-white pr-2 mt-4 bg-black">
         <img
           src="/logoo.png"
           alt="Logo"
           className="w-40 h-20 cursor-pointer"
           onClick={() => window.location.href = "/"}
         />
-        <h2 className="text-white font-bold">{prompt || "NA"}</h2>
+        <h2 className="text-white font-bold">{name}</h2>
         <div className="flex items-center space-x-4">
           <span className="font-bold">Welcome, {user ? user.name : "Guest"}!</span>
         </div>
@@ -98,22 +137,20 @@ export default function ProjectPage() {
         {/* Left Sidebar */}
         <div className="flex flex-col w-1/4 m-4 bg-black rounded-lg" style={{ height: 'calc(100vh - 96px)' }}>
           <h1 className="text-white">manai</h1>
-          <div className="p-4 flex justify-end">
-            <h2 className="p-2 bg-[#262626] rounded">{prompt || "NA"}</h2>
-          </div>
 
           <div className="flex flex-col flex-grow overflow-hidden">
             <div className="flex-grow overflow-y-auto px-4 space-y-4 pr-2">
-              {latestIteration?.aiResponse && (
-                <div className="bg-gray-800 p-2 rounded text-xs">
-                  <pre className="whitespace-pre-wrap">{latestIteration.aiResponse}</pre>
-                </div>
-              )}
-
-              {messages.map((msg, i) => (
-                <div key={i} className={`flex ${msg.type === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`p-2 rounded max-w-xs text-sm ${msg.type === 'user' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-white'}`}>
-                    {msg.text}
+              {project?.iterations?.map((iteration, i) => (
+                <div key={i} className="space-y-2">
+                  <div className="flex justify-end">
+                    <div className="p-2 rounded max-w-xs text-sm bg-blue-600 text-white">
+                      {iteration.prompt}
+                    </div>
+                  </div>
+                  <div className="flex justify-start">
+                    <div className="p-2 rounded max-w-xs text-sm bg-gray-700 text-white whitespace-pre-wrap overflow-x-auto">
+                      <code>{iteration.code}</code>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -163,20 +200,24 @@ export default function ProjectPage() {
 
         {/* Right Content */}
         <div className="flex-1 m-4 p-6 bg-black rounded-lg overflow-y-auto">
-          <h3 className="text-xl mb-4">Generated Content</h3>
-          <div className="bg-white rounded shadow p-4">
-            {videoUrl ? (
-              <ReactPlayer
-                url={videoUrl}
-                controls
-                width="100%"
-                height="auto"
-                style={{ borderRadius: 12 }}
-              />
-            ) : (
-              <p className="text-black">🎥 Waiting for video...</p>
-            )}
-          </div>
+          <h3 className="text-xl mb-4">Video</h3>
+          <div className="flex-1 m-4 p-6 bg-black rounded-lg overflow-y-auto">
+        <h3 className="text-xl mb-4">Video</h3>
+        <div className="bg-white rounded shadow p-4">
+          {videoUrl ? (
+            <ReactPlayer
+              key={videoUrl} // ensures re-render
+              url={videoUrl}
+              controls
+              width="100%"
+              height="auto"
+              style={{ borderRadius: 12 }}
+            />
+          ) : (
+            <p className="text-black">🎥 Waiting for video...</p>
+          )}
+        </div>
+      </div>
         </div>
       </div>
     </div>
