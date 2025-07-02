@@ -4,8 +4,8 @@
 
 ---
 ## Demo
-📹[Watch the Video Preview](https://drive.google.com/file/d/1PLKeUQNSpMa5XKmCuF_bwTcpnDp9_k4A/view?usp=sharing)
-📹[Watch the Video Preview](public/52c8f4d6-5c0e-4f57-86fc-6527c2de427e.mp4)
+📹[Watch the Video Preview](https://drive.google.com/file/d/1UgQX8imlgiS4y6hlI5rnHnbiJVO0R_1e/view?usp=sharing)
+
 
 
 
