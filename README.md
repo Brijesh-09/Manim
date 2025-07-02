@@ -3,6 +3,9 @@
 **Promanim** is a full-stack AI-powered platform that converts natural language prompts into educational animations using [Manim](https://www.manim.community/). Built with a focus on learning, visualization, and automation, this system lets users chat with an AI to generate code and watch the resulting video — instantly.
 
 ---
+## Demo
+📹[Watch the Video Preview](https://drive.google.com/file/d/1PLKeUQNSpMa5XKmCuF_bwTcpnDp9_k4A/view?usp=sharing)
+
 
 ## 🚀 How It Works
 
