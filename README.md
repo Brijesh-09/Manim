@@ -6,7 +6,7 @@
 
 ## 🚀 How It Works
 
-1. **User sends a prompt** (e.g. "Explain how RAM works").
+1. **User sends a prompt** (e.g. "Explain LAN Network in simple way ").
 2. **AI backend (OpenAI / LLM)** responds with:
 
    * Explanation
@@ -25,15 +25,7 @@
 
 ## 🧩 Architecture Overview
 
-```mermaid
-graph TD
-    A[Frontend - Next.js] -->|Send Prompt| B[Backend - Express]
-    B -->|Store| C[PostgreSQL]
-    B -->|Queue Job| D[Redis Queue]
-    D -->|Consume & Render| E[Manim Worker (Python + Docker)]
-    E -->|Upload Video| F[AWS S3]
-    B -->|Check Status + Get URL| A
-```
+![Architecture Diagram](public/arch.png)
 
 ---
 
@@ -50,7 +42,7 @@ graph TD
 ---
 
 # Backend setup
-* [Backend Repo]()
+* [Backend Repo](https://github.com/Brijesh-09/Manim_backend.git)
 cd primary-backend
 npm install
 npm run dev
