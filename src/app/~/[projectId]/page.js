@@ -29,39 +29,46 @@ export default function ProjectPage() {
 
   useEffect(() => {
     if (!projectId) return;
-
+  
     const fetchProject = async () => {
       try {
         const res = await fetch(`http://localhost:8000/api/v1/video/${projectId}`, {
           credentials: "include",
         });
         const data = await res.json();
+  
         if (data.success) {
           const latest = data.project.iterations?.at(-1);
           setProject(data.project);
-          console.log("Fetched project:", data.project);
-          console.log("----------------------------");
           console.log("Fetched project:", data.project.iterations);
-
+  
           if (latest?.videoUrl?.endsWith(".mp4")) {
             const urlWithTimestamp = `${latest.videoUrl}?t=${Date.now()}`;
-            setVideoUrl(urlWithTimestamp); // 🔥 This forces ReactPlayer to re-fetch even if same path
+            setVideoUrl(urlWithTimestamp);
             setPlayerKey(Date.now());
-          } else {
-            setVideoUrl(null);
+            return true; // ✅ Done
           }
         }
       } catch (err) {
         console.error("Error fetching project:", err);
       }
+  
+      return false; // not ready yet
     };
-
-    const delay = 5000;
-    const timeout = setTimeout(fetchProject, delay);
-    console.log(`Fetching project ${projectId} in ${delay / 1000} seconds...`);
-
-    return () => clearTimeout(timeout); // cleanup // Small delay to let routing settle
+  
+    const pollUntilVideoReady = async (retries = 10, delay = 2000) => {
+      for (let i = 0; i < retries; i++) {
+        console.log(`Polling attempt ${i + 1}/${retries}`);
+        const isReady = await fetchProject();
+        if (isReady) break;
+        await new Promise(res => setTimeout(res, delay));
+      }
+    };
+  
+    pollUntilVideoReady();
+  
   }, [projectId]);
+  
 
   useEffect(() => {
     const getUser = async () => {
@@ -125,18 +132,20 @@ export default function ProjectPage() {
     }
   };
 
+  const latest = project?.iterations?.at(-1); // Define latest here
 
   return (
     <div className="flex flex-col min-h-screen bg-black text-white">
       {/* Navbar */}
-      <div className="flex items-center justify-between border-b-1 border-white pr-2 mt-4 bg-black">
+      <div className="flex items-center justify-between border-b border-gray-400 border-opacity-50 pr-2 mt-4 bg-black">
         <img
           src="/logoo.png"
           alt="Logo"
           className="w-40 h-20 cursor-pointer"
           onClick={() => window.location.href = "/"}
         />
-        <h2 className="text-white font-bold">{name}</h2>
+        
+        <h2 className="text-white font-bold">{latest?.prompt}</h2>
         <div className="flex items-center space-x-4">
           <span className="font-bold">Welcome, {user ? user.name : "Guest"}!</span>
         </div>
@@ -210,11 +219,10 @@ export default function ProjectPage() {
         </div>
 
         {/* Right Content */}
-        <div className="flex-1 m-4 p-6 bg-black rounded-lg overflow-y-auto">
+        <div className="flex-1 m-4 p-6 bg-black rounded-md overflow-y-auto">
           <h3 className="text-xl mb-4">Video</h3>
-          <div className="flex-1 m-4 p-6 bg-black rounded-lg overflow-y-auto">
-            <h3 className="text-xl mb-4">Video</h3>
-            <div className="bg-white rounded shadow p-4">
+          <div className="flex-1 m-4 p-6 bg-black rounded-md overflow-y-auto">
+            <div className="bg-gray-800 rounded shadow p-4">
               {videoUrl ? (
                 <ReactPlayer
                   key={videoUrl} // ensures re-render
