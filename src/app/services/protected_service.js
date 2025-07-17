@@ -5,7 +5,7 @@ axios.defaults.withCredentials = true; // so cookies (session) are sent
 
 export const fetchUser = async () => {
   try {
-    const res = await axios.get('http://localhost:8000/api/v1/auth/me', {
+    const res = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL_AUTH}me`, {
       withCredentials: true
     });
     console.log('Logged in user:', res.data.user);
@@ -28,7 +28,7 @@ export const generateVideo = async (prompt, handleUnauthorized) => {
     setLoading(true);
 
     const res = await axios.post(
-      'http://localhost:8000/api/v1/video/create',
+      `${process.env.NEXT_PUBLIC_BACKEND_URL}create`,
       { prompt },
       {
         withCredentials: true,
@@ -71,7 +71,7 @@ export const handleSendMessage = async () => {
   setIsTyping(true);
 
   try {
-    const res = await fetch(`http://localhost:8000/api/v1/video/chat/${projectId}`, {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL_AUTH}chat/${projectId}`, {
       method: "POST",
       credentials: "include",
       headers: {
