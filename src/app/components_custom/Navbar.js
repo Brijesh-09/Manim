@@ -64,11 +64,11 @@ export default function Navbar() {
     e.preventDefault();
     const response = await registerUser(formData);
     if (response.success) {
-      console.log("Registration successful:", response.data);
+      // console.log("Registration successful:", response.data);
       setRegister(false);
       setUser(response.data.user); // Update user state after registration
     } else {
-      console.log("Registration failed:", response.error);
+      // console.log("Registration failed:", response.error);
     }
   };
 
@@ -76,11 +76,11 @@ export default function Navbar() {
     e.preventDefault();
     const response = await loginUser(loginData);
     if (response.success) {
-      console.log("Login successful:", response.data);
+      // console.log("Login successful:", response.data);
       setIsOpen(false);
       setUser(response.data.user); // store logged in user
     } else {
-      console.log("Login failed:", response.error);
+      // console.log("Login failed:", response.error);
     }
   };
 
@@ -91,7 +91,7 @@ export default function Navbar() {
   };
 
   const GoogleLogin = async () => {
-    console.log("Google login clicked");
+    // console.log("Google login clicked");
     window.location.href = `${process.env.NEXT_PUBLIC_BACKEND_URL_AUTH}google`;
   
   }
