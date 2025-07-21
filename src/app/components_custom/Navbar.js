@@ -68,7 +68,7 @@ export default function Navbar() {
       setRegister(false);
       setUser(response.data.user); // Update user state after registration
     } else {
-      // console.log("Registration failed:", response.error);
+       console.log("Registration failed:", response.error);
     }
   };
 
@@ -289,14 +289,14 @@ export default function Navbar() {
             </p>
   
             <form className="space-y-4" onSubmit={handleSubmit}>
-              {/* <input
+              <input
                 type="text"
                 name="name"
                 placeholder="Username"
                 value={formData.name}
                 onChange={handleChange}
                 className="w-full p-2 bg-gray-200 dark:bg-gray-800 border border-gray-600 dark:border-gray-700 rounded-lg focus:outline-none focus:ring focus:ring-blue-500"
-              /> */}
+              />
               <input
                 type="email"
                 name="email"
